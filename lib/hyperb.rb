@@ -1,5 +1,5 @@
 require "hyperb/version"
-require "hyperb/native.bundle"
+require "hyperb/native"
 
 module Hyperb
   class Error < StandardError; end
