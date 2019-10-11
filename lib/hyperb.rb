@@ -1,7 +1,9 @@
-require "hyperb/version"
-require "hyperb/native"
+require 'helix_runtime'
 
-module Hyperb
-  class Error < StandardError; end
-  # Your code goes here...
+begin
+  require 'hyperb/native'
+rescue LoadError
+  warn 'Unable to load text_transform/native. Please run `rake build`'
 end
+
+require 'hyperb/version'

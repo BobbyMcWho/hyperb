@@ -1,3 +1,3 @@
-module Hyperb
+class Hyperb
   VERSION = "0.1.0"
 end

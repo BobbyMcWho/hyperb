@@ -7,4 +7,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 reqwest = "0.9"
-helix = "*"
+helix = "0.7"
