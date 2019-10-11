@@ -3,7 +3,7 @@ RSpec.describe Hyperb do
     expect(Hyperb::VERSION).not_to be nil
   end
 
-  it "does something useful" do
-    binding.pry
+  it "doesn't error when requiring the native" do
+    require 'hyperb/native'
   end
 end
