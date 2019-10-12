@@ -7,6 +7,6 @@ RSpec.describe Hyperb do
     # Todo: figure a way to stub this since webmock won't.
     result = Hyperb.get('http://www.example.com')
 
-    expect(result['status']).to eq('200 OK')
+    expect(result[:status]).to eq('200 OK')
   end
 end

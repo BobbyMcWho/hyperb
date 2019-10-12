@@ -6,21 +6,25 @@ use std::string::String;
 use std::collections::HashMap;
 
 mod coercion;
-use coercion::RubyValue;
+use coercion::{RubyValue, RubyHashKey, hash_key};
+
+mod response_builder;
+use response_builder::build_response;
 
 ruby! {
     class Hyperb {
-        def get(path: String) -> HashMap<String, RubyValue> {
-            let mut body = reqwest::get(&path).unwrap();
-            let mut result: HashMap<String, RubyValue> = HashMap::new();
-            result.insert(
-                "status".to_string(),
-                RubyValue::String(body.status().to_string())
-            );
-            result.insert("body".to_string(),
-                RubyValue::String(body.text().unwrap().to_string())
-            );
-            return result;
+        def get(path: String) -> HashMap<RubyHashKey, RubyValue> {
+            match reqwest::get(&path) {
+                Ok(val) => build_response(val),
+                Err(err) => { // TODO: build_error(err)
+                    let mut result: HashMap<RubyHashKey, RubyValue> = HashMap::new();
+                    result.insert(
+                        hash_key("error"),
+                        RubyValue::String(String::from(format!("error reaching server: {}", err)))
+                    );
+                    return result;
+                }
+            }
         }
     }
 }
