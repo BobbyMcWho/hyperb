@@ -1,39 +1,58 @@
 use helix::{FromRuby, CheckResult, ToRuby, ToRubyResult};
 use helix::sys::VALUE;
+use helix::Symbol;
 use std::collections::HashMap;
 use std::string::String;
+
+#[derive(Clone,Debug,Eq,PartialEq,Hash)]
+pub enum RubyHashKey {
+    String(String),
+    Symbol(Symbol)
+}
+
+pub enum CheckedRubyHashKey {
+    Symbol(<Symbol as FromRuby>::Checked),
+    String(<String as FromRuby>::Checked)
+}
+
+pub fn hash_key(s: &str) -> RubyHashKey {
+    RubyHashKey::Symbol(Symbol::from_string(s.to_string()))
+}
 
 #[derive(Clone,Debug)]
 pub enum RubyValue {
     Null,
+    Symbol(Symbol),
     Boolean(bool),
     Integer(i64),
     Float(f64),
-    String(std::string::String),
+    String(String),
     Array(Vec<RubyValue>),
-    Object(HashMap<String, RubyValue>)
+    Hash(HashMap<RubyHashKey, RubyValue>)
 }
 
 pub enum CheckedRubyValue {
     Null,
+    Symbol(<Symbol as FromRuby>::Checked),
     Boolean(<bool as FromRuby>::Checked),
     Integer(<i64 as FromRuby>::Checked),
     Float(f64),
     String(<String as FromRuby>::Checked),
     Array(<Vec<RubyValue> as FromRuby>::Checked),
-    Object(<HashMap<String, RubyValue> as FromRuby>::Checked)
+    Hash(<HashMap<RubyHashKey, RubyValue> as FromRuby>::Checked)
 }
 
 impl ToRuby for RubyValue {
     fn to_ruby(self) -> ToRubyResult {
         match self {
             RubyValue::Null => ().to_ruby(),
+            RubyValue::Symbol(v) => v.to_ruby(),
             RubyValue::Boolean(v) => v.to_ruby(),
             RubyValue::Integer(v) => v.to_ruby(),
             RubyValue::Float(v) => v.to_ruby(),
             RubyValue::String(v) => v.to_ruby(),
             RubyValue::Array(v) => v.to_ruby(),
-            RubyValue::Object(v) => v.to_ruby(),
+            RubyValue::Hash(v) => v.to_ruby(),
         }
     }
 }
@@ -60,8 +79,10 @@ impl FromRuby for RubyValue {
             Ok(CheckedRubyValue::String(checked))
         } else if let Ok(checked) = Vec::<RubyValue>::from_ruby(value) {
             Ok(CheckedRubyValue::Array(checked))
-        } else if let Ok(checked) = HashMap::<String, RubyValue>::from_ruby(value) {
-            Ok(CheckedRubyValue::Object(checked))
+        } else if let Ok(checked) = HashMap::<RubyHashKey, RubyValue>::from_ruby(value) {
+            Ok(CheckedRubyValue::Hash(checked))
+        } else if let Ok(checked) = Symbol::from_ruby(value){
+            Ok(CheckedRubyValue::Symbol(checked))
         } else {
             type_error!(value, "a ruby value")
         }
@@ -75,7 +96,39 @@ impl FromRuby for RubyValue {
             CheckedRubyValue::Float(c) => RubyValue::Float(c),
             CheckedRubyValue::String(c) => RubyValue::String(FromRuby::from_checked(c)),
             CheckedRubyValue::Array(c) => RubyValue::Array(FromRuby::from_checked(c)),
-            CheckedRubyValue::Object(c) => RubyValue::Object(FromRuby::from_checked(c))
+            CheckedRubyValue::Hash(c) => RubyValue::Hash(FromRuby::from_checked(c)),
+            CheckedRubyValue::Symbol(c) => RubyValue::Symbol(FromRuby::from_checked(c))
+        }
+    }
+}
+
+impl ToRuby for RubyHashKey {
+    fn to_ruby(self) -> ToRubyResult {
+        match self {
+            RubyHashKey::Symbol(v) => v.to_ruby(),
+            RubyHashKey::String(v) => v.to_ruby()
+        }
+    }
+}
+
+impl FromRuby for RubyHashKey {
+    type Checked = CheckedRubyHashKey;
+
+    fn from_ruby(value: VALUE) -> CheckResult<CheckedRubyHashKey> {
+
+        if let Ok(checked) = String::from_ruby(value) {
+            Ok(CheckedRubyHashKey::String(checked))
+        } else if let Ok(checked) = Symbol::from_ruby(value){
+            Ok(CheckedRubyHashKey::Symbol(checked))
+        } else {
+            type_error!(value, "a symbol or string")
+        }
+    }
+
+    fn from_checked(checked: CheckedRubyHashKey) -> RubyHashKey {
+        match checked {
+            CheckedRubyHashKey::String(c) => RubyHashKey::String(FromRuby::from_checked(c)),
+            CheckedRubyHashKey::Symbol(c) => RubyHashKey::Symbol(FromRuby::from_checked(c))
         }
     }
 }
